@@ -1,1 +1,1 @@
-from vggish import VGG, VGGish
+from .vggish import VGG, VGGish

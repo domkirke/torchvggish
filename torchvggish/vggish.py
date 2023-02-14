@@ -170,7 +170,6 @@ class VGGish(VGG):
     def forward(self, x, fs=None):
         if self.preprocess:
             x = self._preprocess(x, fs)
-        x = x.to(self.device)
         x = VGG.forward(self, x)
         if self.postprocess:
             x = self._postprocess(x)

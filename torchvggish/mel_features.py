@@ -15,7 +15,7 @@
 
 """Defines routines to compute mel spectrogram features from audio waveform."""
 
-import numpy as np
+import numpy as np, torch, torchaudio
 
 
 def frame(data, window_length, hop_length):
@@ -212,12 +212,21 @@ def log_mel_spectrogram(data,
   window_length_samples = int(round(audio_sample_rate * window_length_secs))
   hop_length_samples = int(round(audio_sample_rate * hop_length_secs))
   fft_length = 2 ** int(np.ceil(np.log(window_length_samples) / np.log(2.0)))
-  spectrogram = stft_magnitude(
-      data,
-      fft_length=fft_length,
-      hop_length=hop_length_samples,
-      window_length=window_length_samples)
-  mel_spectrogram = np.dot(spectrogram, spectrogram_to_mel_matrix(
-      num_spectrogram_bins=spectrogram.shape[1],
-      audio_sample_rate=audio_sample_rate, **kwargs))
-  return np.log(mel_spectrogram + log_offset)
+  # spectrogram = stft_magnitude(
+  #     data,
+  #     fft_length=fft_length,
+  #     hop_length=hop_length_samples,
+  #     window_length=window_length_samples)
+  # mel_spectrogram = np.dot(spectrogram, spectrogram_to_mel_matrix(
+  #     num_spectrogram_bins=spectrogram.shape[1],
+  #     audio_sample_rate=audio_sample_rate, **kwargs))
+  mel_spectrogram = torchaudio.transforms.MelSpectrogram(
+    sample_rate = audio_sample_rate,
+    n_fft = fft_length, 
+    hop_length=hop_length_samples,
+    window_length_samples=window_length_samples,
+    n_mels=kwargs.get('num_mel_bins'),
+    f_min=kwargs.get('lower_edge_hertz'),
+    f_max=kwargs.get('upper_edge_hertz')
+  )(data)
+  return torch.log(mel_spectrogram + torch.finfo(data.dtype).eps)

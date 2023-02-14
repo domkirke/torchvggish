@@ -16,11 +16,7 @@
 """Compute input examples for VGGish from audio waveform."""
 
 # Modification: Return torch tensors rather than numpy arrays
-import torch
-
-import numpy as np
-import resampy
-
+import torch, torchaudio
 from . import mel_features
 from . import vggish_params
 
@@ -47,10 +43,10 @@ def waveform_to_examples(data, sample_rate, return_tensor=True):
   """
     # Convert to mono.
     if len(data.shape) > 1:
-        data = np.mean(data, axis=1)
+        data = data.mean(1)
     # Resample to the rate assumed by VGGish.
     if sample_rate != vggish_params.SAMPLE_RATE:
-        data = resampy.resample(data, sample_rate, vggish_params.SAMPLE_RATE)
+        data = torchaudio.functional.resample(data, sample_rate, vggish_params.SAMPLE_RATE)
 
     # Compute log mel spectrogram features.
     log_mel = mel_features.log_mel_spectrogram(
@@ -74,9 +70,6 @@ def waveform_to_examples(data, sample_rate, return_tensor=True):
         window_length=example_window_length,
         hop_length=example_hop_length)
 
-    if return_tensor:
-        log_mel_examples = torch.tensor(
-            log_mel_examples, requires_grad=True)[:, None, :, :].float()
 
     return log_mel_examples
 
@@ -92,7 +85,5 @@ def wavfile_to_examples(wav_file, return_tensor=True):
   Returns:
     See waveform_to_examples.
   """
-    wav_data, sr = sf.read(wav_file, dtype='int16')
-    assert wav_data.dtype == np.int16, 'Bad sample type: %r' % wav_data.dtype
-    samples = wav_data / 32768.0  # Convert to [-1.0, +1.0]
-    return waveform_to_examples(samples, sr, return_tensor)
+    samples, sr = torchaudio.load(wav_file)
+    return waveform_to_examples(samples, sr)
